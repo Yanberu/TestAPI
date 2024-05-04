@@ -33,6 +33,7 @@ namespace ClientsProject.Models
         [Required]
         public string Email { get; set; }
 
+        
     }
     public class ClientDBContext : DbContext
     {

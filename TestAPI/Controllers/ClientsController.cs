@@ -13,6 +13,10 @@ using System.Web;
 using System.Web.Mvc;
 using ClientsProject.Models;
 using Newtonsoft.Json;
+using System.Web.Configuration;
+using ClientsProject.Models;
+using System.Threading;
+using System.Threading.Tasks;
 
 
 namespace ClientsProject.Controllers
@@ -21,8 +25,9 @@ namespace ClientsProject.Controllers
     public class ClientsController : Controller
     {
         private ClientDBContext db = new ClientDBContext();
+        private static IDictionary<Guid, int> _tasks = new Dictionary<Guid, int>();
 
-        
+
 
         // GET: Clients
         public ActionResult Index(string searchString)
@@ -35,14 +40,7 @@ namespace ClientsProject.Controllers
                 clients = clients.Where(s => s.Phone.Contains(searchString));
             }
             
-            if (TempData["Buffer"] == null)
-            {
-                ViewBag.progress = 100;
-            }
-            else
-            {
-                ViewBag.progress = TempData["Buffer"];
-            }
+            
             return View(clients);
         }
 
@@ -81,7 +79,6 @@ namespace ClientsProject.Controllers
             {
                 db.Clients.Add(client);
                 db.SaveChanges();
-                TempData["Buffer"] = 100;
                 return RedirectToAction("Index");
             }
             
@@ -140,11 +137,55 @@ namespace ClientsProject.Controllers
         public ActionResult DeleteConfirmed(int id)
         {
             Client client = db.Clients.Find(id);
-            TempData["Buffer"] = 100 - 100 / db.Clients.Count();
+            
             db.Clients.Remove(client);
             db.SaveChanges();
             return RedirectToAction("Index");
+                        
+        }
+                
+        [HttpPost]
+        public ActionResult DeleteSelected(FormCollection formCollection)
+        {
+            string[] ids = formCollection["ID"].Split(new char[] { ',' });
             
+            foreach (string id in ids)
+            {
+                
+                var client = this.db.Clients.Find(int.Parse(id));
+
+                this.db.Clients.Remove(client);
+                this.db.SaveChanges();
+
+            }
+            return RedirectToAction("Index");
+        }
+
+        
+        public ActionResult Start()
+        {
+
+            var taskId = Guid.NewGuid();
+            _tasks.Add(taskId, 0);
+
+            Task.Factory.StartNew(() =>
+            {
+                for (var i = 0; i <= 100; i++)
+                {
+                    _tasks[taskId] = i;
+                    Thread.Sleep(50);
+                }
+                
+                _tasks.Remove(taskId);
+            });
+            return Json(taskId);
+
+        }
+
+        [HttpPost]
+        public ActionResult Progress(Guid id)
+        {
+            return Json(_tasks.Keys.Contains(id) ? _tasks[id] : 100);
         }
 
         protected override void Dispose(bool disposing)
