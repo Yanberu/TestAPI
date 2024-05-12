@@ -17,6 +17,7 @@ using System.Web.Configuration;
 using ClientsProject.Models;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web.UI;
 
 
 namespace ClientsProject.Controllers
@@ -148,46 +149,41 @@ namespace ClientsProject.Controllers
         public ActionResult DeleteSelected(FormCollection formCollection)
         {
             string[] ids = formCollection["ID"].Split(new char[] { ',' });
-            
+            int progress = 0;
             foreach (string id in ids)
             {
                 
+                progress = progress + 100 / ids.Length;
+                ViewBag.Progress = progress;
+                TempData["progress"] = progress;
                 var client = this.db.Clients.Find(int.Parse(id));
-
+                string script = $"alert('Current server time is: {DateTime.Now}');";
                 this.db.Clients.Remove(client);
                 this.db.SaveChanges();
-
+                
             }
             return RedirectToAction("Index");
         }
 
-        
-        public ActionResult Start()
-        {
-
-            var taskId = Guid.NewGuid();
-            _tasks.Add(taskId, 0);
-
-            Task.Factory.StartNew(() =>
-            {
-                for (var i = 0; i <= 100; i++)
-                {
-                    _tasks[taskId] = i;
-                    Thread.Sleep(50);
-                }
-                
-                _tasks.Remove(taskId);
-            });
-            return Json(taskId);
-
-        }
-
         [HttpPost]
-        public ActionResult Progress(Guid id)
+        public ActionResult ReloadPage(FormCollection formCollection)
         {
-            return Json(_tasks.Keys.Contains(id) ? _tasks[id] : 100);
+            string[] ids = formCollection["ID"].Split(new char[] { ',' });
+            return RedirectToAction("Index");
         }
 
+
+        public ActionResult DeleteItem(int id)
+        {
+            //Thread.Sleep(500);
+            Client client = db.Clients.Find(id);
+
+            db.Clients.Remove(client);
+            db.SaveChanges();
+
+
+            return RedirectToAction("Index");
+        }
         protected override void Dispose(bool disposing)
         {
             if (disposing)

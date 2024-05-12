@@ -20,6 +20,7 @@
     <script type="text/javascript">
 
     </script>
+
 </head>
 <p>
 
@@ -34,77 +35,111 @@
 }
     </p>
     <div id="tasks"></div>
+
+
     @section scripts
 {
         <script type="text/javascript">
 
             var count = 0;
+
             $(function () {
-                
+
                 $('input[type=checkbox]').click(function () {
+
                     if (this.checked) {
                         count++;
+
                     } else {
                         count--;
+
                     }
-                    
+
                 });
             });
+
+
             
-            function updateMonitor(taskId, status) {
-                $("#P" + taskId).css("width", status + "%");
-                if (status > 0 && status < 100) {
-                    $("#" + taskId).html("Delete " + count + " from: " + @Model.Count() + " recordings " + "/Progress: " + status + "%");
-                    $('#P' + taskId).html(status + '%');
-                } else {
-                    $("#" + taskId).html("Deletion process: " + status);
-                    $("#P" + taskId).css("width", 100 + "%");
-                    $('#P' + taskId).html(status);
-                }
+            function updatePage() {
+
+                $("#myForm").submit();
 
             }
 
 
+            
+
+           
+            function sleep(millis) {
+                var t = (new Date()).getTime();
+                var i = 0;
+                while (((new Date()).getTime() - t) < millis) {
+                    i++;
+                }
+            }
+
+
+
             $(function () {
-                $("#start2").click(function (e) {
+                $("#start").click(function (e) {
                     e.preventDefault();
+                    $("#tasks").append($("<p id='" + i + "'><div class='progress progress-striped active'><div id='P" + i + "' class='progress-bar' style='width:1%;'></div></div></p>"));
+                    var selectedCheckboxes = [];
+                    var checkboxes = document.querySelectorAll('input[type=checkbox]:checked');
+                    for (var i = 0; i < checkboxes.length; i++) {
+                        selectedCheckboxes.push(checkboxes[i].value);
+                    }
+                    var progress = 0;
+                    var progressCount = 0;
+                    if (count == 0) {
+                        sleep(1000);
 
-                    $.post("/Clients/Start", {}, function (taskId) {
 
-                        // init
-                        $("#tasks").append($("<p id='" + taskId + "'><div class='progress progress-striped active'><div id='P" + taskId + "' class='progress-bar' style='width:1%;'></div></div></p>"));
+                        updatePage();
+                    }
+                    
+                    for (var i = 0; i < count; i++) {
+                        
+                        var id = selectedCheckboxes[i];
+                        
+                        
+                        $.post("/Clients/DeleteItem", { id: id }, function (id) {
+                            progress = progress + 100 / count;
+                            progressCount++;
+                            
+                            $("#tasks").html(" < Progress = " + progressCount + " of " + count + " items> <div class='progress progress-striped active'><div id='P" + progress + "' class='progress-bar' style='width:" + progress + "%;'></div></div></p >");
+                            sleep(350);
+                            if (progressCount == count) {
+                                sleep(1000);
 
-                        // update
-                        var intervalId = setInterval(function () {
-                            $.post("/Clients/Progress", { id: taskId }, function (progress) {
-                                if (progress >= 100) {
-                                    updateMonitor(taskId, "Completed");
-                                    clearInterval(intervalId);
-                                    $("#tasks").html('');
 
-                                    $("#myForm").submit();
-
-                                } else {
-                                    updateMonitor(taskId, progress);
-
-                                }
-                            });
-                        }, 100);
-                    });
-
+                                updatePage();
+                            }
+                            
+                            
+                        });
+                        
+                    }
+                    
                 });
             });
-        </script>   
+
+
+        </script>
     }
-<div class="col-md-offset-2 col-md-10">
 
-    <button id="start2" type="submit" value="DeleteSelected" class="btn btn-sm btn-danger rounded-0" @*onclick="return confirm('Are you sure?')"*@><i class="fa fa-trash-o"></i> Delete selected</button>
-</div>
-    @using (Html.BeginForm("DeleteSelected", "Clients", FormMethod.Post, new { id = "myForm" }))
+
+
+
+
+    <div class="col-md-offset-2 col-md-10">
+
+        <button id="start" type="submit" value="DeleteSelected" class="btn btn-sm btn-danger rounded-0" @*onclick="return confirm('Are you sure?')"*@><i class="fa fa-trash-o"></i> Delete selected</button>
+    </div>
+
+    
+    @using (Html.BeginForm("Index", "Clients", FormMethod.Post, new { id = "myForm" }))
     {
-        
-        
-
         <table class="table">
             <tr>
                 <th>
@@ -160,9 +195,14 @@
 
 
         </table>
-
-
     }
+
+
+
+
+
+
+
 
 
 
